@@ -1,5 +1,7 @@
 package com.david.study;
 
+import java.util.Random;
+
 public class Repositorio {
     private String nombre;
     private String ramaPrincipal = "main";
@@ -27,10 +29,29 @@ public class Repositorio {
 
     // fun
     public void fusionar() {
-        System.out.println("Fusionar");
+        System.out.println("Mixing branches");
     }
 
-    public void revertir() {
-        System.out.println("Revertir");
+    public void revertir(String branch) {
+        System.out.println("Reversing branch changes " + branch);
+    }
+
+    public void commit(String msg) {
+        System.out.println("\033[1;32m " + generateRandomHash(7) + msg);
+    }
+
+    public static String generateRandomHash(int length) {
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder();
+
+        // Caracteres hexadecimales
+        String hexChars = "0123456789abcdef";
+
+        for (int i = 0; i < length; i++) {
+            int randomIndex = random.nextInt(hexChars.length());
+            sb.append(hexChars.charAt(randomIndex));
+        }
+
+        return sb.toString();
     }
 }
