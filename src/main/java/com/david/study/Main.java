@@ -1,76 +1,5 @@
 package com.david.study;
 
-import java.util.Scanner;
-
-public class Main {
-    private static Scanner scanner = new Scanner(System.in);
-
-    public static void main(String[] args) {
-        String nombreRep = "Git-like";
-        String ramaPrincipalRep = "main";
-        Repositorio repositorio = new Repositorio(nombreRep, ramaPrincipalRep);
-
-        do {
-            System.out.println("\033[1;34m" + ">>>");
-            // Read command
-            String req = scanner.nextLine();
-            String[] parts = req.split("\\s+", 4); // Limitamos el split para mantener el mensaje del commit junto
-
-            if ("git-like".equals(parts[0])) {
-                // Command cases
-                switch (parts[1]) {
-                    case "status":
-                        System.out.println("\033[0m"+ "Working in branch " + repositorio.getRamaPrincipal());
-                    break;
-
-                    case "commit":
-                        if (parts.length >= 4 && "-m".equals(parts[2])) {
-                            repositorio.commit(parts[3]);  // Agregar commit
-                        } else {
-                            System.out.println("\033[1;34m" + "Wrong format. Use: git-like commit -m \"message\"");
-                        }
-                    break;
-
-                    case "merge":
-                        if (parts.length >= 4) {
-                            repositorio.fusionar();
-                        } else {
-                            System.out.println("\033[1;34m" + "Wrong format. Use: git-like commit -m \"message\"");
-                        }
-                    break;
-
-                    case "revert":
-                            repositorio.revertir(repositorio.getRamaPrincipal());  // Agregar commit
-                    break;
-
-                    case "help":
-                        System.out.println(
-                                "\033[1;34m" +
-                                "\n  .:Commands:. " +
-                                "\n git-like status" +
-                                "\n git-like commit -m <message>" +
-                                "\n git-like merge <branch1> <branch2>" +
-                                "\n git-like revert "
-                        );
-                    break;
-
-                    default:
-                        System.out.println("\033[1;31m" + "Check the command, has a wrong format...");
-                }
-            } else if ("exit".equals(parts[0])) {
-                System.out.println("\033[1;34m" + "End Program...");
-                break;
-            } else {
-                System.out.println("\033[1;31m" + "Invalid command");
-            }
-        }
-        while (true);
-    }
-}
-/*
-
-package com.david.study;
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -86,7 +15,7 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
 public class Main {
-    private static final String GIT_DIR = ".git";
+    private static final String GIT_DIR = ".gitlike";
     private static final String OBJECTS_DIR = GIT_DIR + "/objects";
     private static final String REFS_DIR = GIT_DIR + "/refs";
 
@@ -114,13 +43,15 @@ public class Main {
 //            case "write-tree" -> writeTree();
             case "commit-tree" -> commitTree(args);
             case "log" -> showCommitLog(args);
+            case "checkout" -> checkoutCommit(args);
+            // TODO: implements if we got time
 //            case "clone" -> cloneRepository(args);
             default -> System.out.println("Unknown command: " + command);
         }
     }
 
 
-    //                          Another methods
+    // ---------------------- Init Command ----------------------
     private static void initRepository() throws IOException {
         Files.createDirectories(Paths.get(OBJECTS_DIR));
         Files.createDirectories(Paths.get(REFS_DIR));
@@ -128,7 +59,7 @@ public class Main {
         System.out.println("Initialized git directory");
     }
 
-    // show commit
+    // ---------------------- Log Command ----------------------
     private static void showCommitLog(String[] args) throws IOException {
         // Get current HEAD commit
         String commitHash = getCurrentHead();
@@ -399,7 +330,7 @@ public class Main {
     }
     private static String createCommitObject(String treeHash, String parentHash, String message) throws IOException {
         String timestamp = Instant.now().toString();
-        String author = "Prakhar Deep <prakhardeepoo9@gmail.com>";
+        String author = "David leon <jd.leon@unimayor.edu.co>";
         String committer = author;
         StringBuilder commitContent = new StringBuilder()
                 .append("tree ").append(treeHash).append('\n')
@@ -415,6 +346,88 @@ public class Main {
         return commitHash;
     }
 
-}
+    // ---------------------- Checkout Command ----------------------
+    // Helper class for representing tree entries
+    private static class TreeEntry {
+        String mode;
+        String name;
+        String sha;
 
- */
+        TreeEntry(String mode, String name, String sha) {
+            this.mode = mode;
+            this.name = name;
+            this.sha = sha;
+        }
+    }
+
+    private static void checkoutCommit(String[] args) throws IOException {
+        if (args.length < 2) {
+            System.out.println("Usage: checkout <commit-hash>");
+            return;
+        }
+        String commitHash = args[1];
+        String commit = readCommitObject(commitHash);
+        String treeHash = null;
+        for (String line : commit.split("\n")) {
+            if (line.startsWith("tree ")) {
+                treeHash = line.substring(5).trim();
+                break;
+            }
+        }
+        if (treeHash == null) {
+            System.out.println("No tree found in commit.");
+            return;
+        }
+        // Crear un directorio para el checkout, por ejemplo: checkout-<commitHash>
+        String checkoutDirName = "checkout-" + commitHash;
+        Path checkoutDir = Paths.get(checkoutDirName);
+        Files.createDirectories(checkoutDir);
+        checkoutTree(treeHash, checkoutDir);
+        System.out.println("Checked out commit " + commitHash + " into directory " + checkoutDirName);
+    }
+    // Recorre el árbol y escribe archivos/directorios en 'dest'
+    private static void checkoutTree(String treeHash, Path dest) throws IOException {
+        List<TreeEntry> entries = readTreeEntries(treeHash);
+        for (TreeEntry entry : entries) {
+            Path entryPath = dest.resolve(entry.name);
+            if (entry.mode.equals("40000")) { // Directorio
+                Files.createDirectories(entryPath);
+                checkoutTree(entry.sha, entryPath);
+            } else if (entry.mode.equals("100644")) { // Archivo
+                // Leer blob y escribirlo en el archivo
+                String blobContent = readObject(entry.sha);
+                Files.write(entryPath, blobContent.getBytes(StandardCharsets.UTF_8));
+            }
+        }
+    }
+    private static List<TreeEntry> readTreeEntries(String hash) throws IOException {
+        List<TreeEntry> entries = new ArrayList<>();
+        Path objectPath = Paths.get(shaToPath(hash));
+        try (InputStream fileIn = Files.newInputStream(objectPath);
+             InflaterInputStream inflater = new InflaterInputStream(fileIn);
+             DataInputStream dataIn = new DataInputStream(inflater)) {
+            // Saltar el header
+            while (dataIn.readByte() != 0) {}
+            while (dataIn.available() > 0) {
+                StringBuilder modeBuilder = new StringBuilder();
+                byte b;
+                while ((b = dataIn.readByte()) != ' ') {
+                    modeBuilder.append((char) b);
+                }
+                String mode = modeBuilder.toString();
+                StringBuilder nameBuilder = new StringBuilder();
+                while ((b = dataIn.readByte()) != 0) {
+                    nameBuilder.append((char) b);
+                }
+                String name = nameBuilder.toString();
+                byte[] shaBytes = new byte[20];
+                dataIn.readFully(shaBytes);
+                String sha = bytesToHex(shaBytes);
+                TreeEntry entry = new TreeEntry(mode, name, sha);
+                entries.add(entry);
+            }
+        }
+        return entries;
+    }
+
+}
