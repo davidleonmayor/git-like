@@ -40,7 +40,7 @@ public class Main {
 //            case "cat-file" -> catFile(args);
 //            case "hash-object" -> hashObject(args);
 //            case "ls-tree" -> lsTree(args);
-//            case "write-tree" -> writeTree();
+            case "write-tree" -> writeTreeCommand(args);
             case "commit-tree" -> commitTree(args);
             case "log" -> showCommitLog(args);
             case "checkout" -> checkoutCommit(args);
@@ -50,6 +50,14 @@ public class Main {
         }
     }
 
+    // ---------------------- Write-Tree Command ----------------------
+    // Create a tree object from the working directory (excluding the GIT_DIR folder)
+    private static void writeTreeCommand(String[] args) throws IOException {
+        Path cwd = Paths.get(".").toRealPath();
+        // Delete the Work Repository folder from the list
+        String treeHash = writeTreeRecursive(cwd);
+        System.out.println("Tree hash: " + treeHash);
+    }
 
     // ---------------------- Init Command ----------------------
     private static void initRepository() throws IOException {
@@ -226,23 +234,19 @@ public class Main {
     }
     private static void writeTreeEntry(ByteArrayOutputStream output, Path baseDir, Path path) {
         try {
+            // Avoid including the ".gitlike" repository directory
+            if (path.getFileName().toString().equals(GIT_DIR)) {
+                return;
+            }
+
             String relativePath = baseDir.relativize(path).toString();
             String mode;
             String hash;
-
             if (Files.isDirectory(path)) {
-                // Skip .git directory
-                if (path.getFileName().toString().equals(".git")) {
-                    return;
-                }
-                // Directory mode: 40000
                 mode = "40000";
-                // Create tree for directory
                 hash = writeTreeRecursive(path);
             } else {
-                // Regular file mode: 100644
                 mode = "100644";
-                // Create blob for file
                 hash = createBlobObject(path.toString(), true);
             }
 
@@ -378,14 +382,13 @@ public class Main {
             System.out.println("No tree found in commit.");
             return;
         }
-        // Crear un directorio para el checkout, por ejemplo: checkout-<commitHash>
         String checkoutDirName = "checkout-" + commitHash;
         Path checkoutDir = Paths.get(checkoutDirName);
         Files.createDirectories(checkoutDir);
         checkoutTree(treeHash, checkoutDir);
         System.out.println("Checked out commit " + commitHash + " into directory " + checkoutDirName);
     }
-    // Recorre el árbol y escribe archivos/directorios en 'dest'
+    // Walk through the tree and write files/directories in 'dest'
     private static void checkoutTree(String treeHash, Path dest) throws IOException {
         List<TreeEntry> entries = readTreeEntries(treeHash);
         for (TreeEntry entry : entries) {
