@@ -1,7 +1,10 @@
 // File: LogCommand.java
-package com.david.study;
+package com.david.study.impl;
 
 import java.io.IOException;
+
+import com.david.study.GitRepository;
+import com.david.study.interfaces.Command;
 
 public class LogCommand implements Command {
     private final GitRepository repository;

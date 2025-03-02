@@ -1,4 +1,4 @@
-package com.david.study;
+package com.david.study.model;
 
 import java.time.LocalDate;
 

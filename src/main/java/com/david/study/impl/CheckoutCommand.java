@@ -1,8 +1,11 @@
-package com.david.study;
+package com.david.study.impl;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import com.david.study.GitRepository;
+import com.david.study.interfaces.Command;
 
 public class CheckoutCommand implements Command {
     private final GitRepository repository;
