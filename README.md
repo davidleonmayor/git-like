@@ -24,7 +24,9 @@ java -cp target/classes com.david.study.Main
 ```
 1. Register user
 2. Log in
+   
 Select an option:
+
 After entering a username and password, the program will close, and you will need to run it again to log in.
 
 Log In
@@ -39,8 +41,9 @@ Log Out
 To log out, execute the following command:
 ```bash
 java -cp target/classes com.david.study.Main logout
-This will delete the saved session and prompt for authentication on the next execution.
 ```
+This will delete the saved session and prompt for authentication on the next execution.
+
 Main Commands
 
 
