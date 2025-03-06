@@ -9,13 +9,16 @@ import com.david.study.impl.CommitTreeCommand;
 import com.david.study.impl.InitCommand;
 import com.david.study.impl.LogCommand;
 import com.david.study.interfaces.Command;
+import com.david.study.util.AuthManager;
+import com.david.study.util.Authenticator;
 
 //Holaa 
 public class Main {
     private static final Map<String, Command> commands = new HashMap<>();
 
     public static void main(String[] args) {
-        // Inyección de dependencia (DIP): se crea el GitRepository y se lo pasa a cada comando.
+        // Inyección de dependencia (DIP): se crea el GitRepository y se lo pasa a cada
+        // comando.
         GitRepository repository = new GitRepository();
 
         // Registro de comandos (OCP y LSP)
@@ -24,11 +27,23 @@ public class Main {
         commands.put("log", new LogCommand(repository));
         commands.put("checkout", new CheckoutCommand(repository));
 
+        AuthManager authManager = new AuthManager();
+        Authenticator.authenticate(authManager);
+
         if (args.length == 0) {
             System.out.println("Please provide a command");
             return;
         }
+
         String commandKey = args[0];
+        
+        if ("logout".equals(commandKey)) {
+            Authenticator.logout();
+            System.out.println("Has cerrado sesión. Reinicia el programa para volver a iniciar sesión.");
+            System.exit(0);
+        }
+
+
         Command command = commands.get(commandKey);
         if (command != null) {
             try {
